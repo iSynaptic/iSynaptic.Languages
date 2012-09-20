@@ -70,17 +70,17 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
 
         public static Parser<NamespaceDeclaration> NamespaceDeclaration()
         {
-            return BlockedConcept(
+            return Concept(
                 NamespaceKeyword,
-                LanguageDeclaration().Many(),
-                (id, langs) => new NamespaceDeclaration(id, langs));
+                LanguageDeclaration().Many().Blocked(),
+                (id, _, langs) => new NamespaceDeclaration(id, langs));
         }
 
         public static Parser<LanguageDeclaration> LanguageDeclaration()
         {
-            return BlockedConceptWithInheritance(
+            return Concept(
                 LanguageKeyword,
-                Parse.Return(new Unit()),
+                Parse.Return(new Unit()).Blocked(),
                 (id, baseLanguage, u) => new LanguageDeclaration(id))
                 .Named("language");
         }
@@ -189,43 +189,31 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
             return WhiteSpaceCharacter().Many().Text();
         }
 
-        private static Parser<T> Concept<T>(String keyword, Func<String, T> selector)
+        public static Parser<T> Concept<T, TDefinition>(String keyword, Parser<TDefinition> definition, Func<String, TDefinition, T> selector)
+        {
+            return ConceptCore(keyword, false, definition, (id, @base, def) => selector(id, def));
+        }
+
+        public static Parser<T> Concept<T, TDefinition>(String keyword, Parser<TDefinition> definition, Func<String, Maybe<String>, TDefinition, T> selector)
+        {
+            return ConceptCore(keyword, true, definition, selector);
+        }
+
+        private static Parser<T> ConceptCore<T, TDefinition>(String keyword, bool canInherit, Parser<TDefinition> definition, Func<String, Maybe<String>, TDefinition, T> selector)
         {
             return from k in Parse.String(keyword)
                    from id in Identifier()
-                   from statementEnd in StatementEnd()
-                   select selector(id);
+
+                   from @base in canInherit
+                        ? InheritsOperator().Interleave().Then(_ => Identifier().Select(x => x.ToMaybe()))
+                            .Or(Parse.Return(Maybe<String>.NoValue))
+                        : Parse.Return(Maybe<String>.NoValue)
+
+                   from def in definition
+                   select selector(id, @base, def);
         }
 
-        private static Parser<T> ConceptWithInheritance<T>(String keyword, Func<String, Maybe<String>, T> selector)
-        {
-            return from k in Parse.String(keyword)
-                   from id in Identifier()
-                   from @base in InheritsOperator().Interleave().Then(_ => Identifier().Select(x => x.ToMaybe()))
-                        .Or(Parse.Return(Maybe<String>.NoValue))
-                   from statementEnd in StatementEnd()
-                   select selector(id, @base);
-        }
-
-        private static Parser<T> BlockedConcept<T, TBody>(String keyword, Parser<TBody> body, Func<String, TBody, T> selector)
-        {
-            return from k in Parse.String(keyword)
-                   from id in Identifier()
-                   from b in Blocked(body)
-                   select selector(id, b);
-        }
-
-        private static Parser<T> BlockedConceptWithInheritance<T, TBody>(String keyword, Parser<TBody> body, Func<String, Maybe<String>, TBody, T> selector)
-        {
-            return from k in Parse.String(keyword)
-                   from id in Identifier()
-                   from @base in InheritsOperator().Interleave().Then(_ => Identifier().Select(x => x.ToMaybe()))
-                        .Or(Parse.Return(Maybe<String>.NoValue))
-                   from b in Blocked(body)
-                   select selector(id, @base, b);
-        }
-
-        private static Parser<T> Blocked<T>(Parser<T> body)
+        private static Parser<T> Blocked<T>(this Parser<T> body)
         {
             return from blockStart in BlockStart()
                    from b in body

@@ -112,11 +112,12 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
 
             var ns = GetResult(result);
 
-            ns.HasValue.Should().BeTrue(ns.Observations.Delimit(""));
+            ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
+            ns.HasValue.Should().BeTrue("no value");
             ns.Value.Name.Should().Be("Foo");
 
             ns.Value.Languages.Should().NotBeNull();
-            ns.Value.Languages.Should().HaveCount(1);
+            ns.Value.Languages.Should().HaveCount(1, "missing language");
             ns.Value.Languages.ElementAt(0).Name.Should().Be("Bar");
         }
 
