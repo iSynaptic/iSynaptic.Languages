@@ -38,18 +38,6 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
         public static readonly String LanguageKeyword = "language";
         public static readonly String InterleaveKeyword = "interleave";
 
-        private static IEnumerable<Char> NewLineCharacters()
-        {
-            return new[]
-            {
-                '\u000D',
-                '\u000A',
-                '\u0085',
-                '\u2028',
-                '\u2029'
-            };
-        }
-
         public static IEnumerable<String> Keywords()
         {
             return new[]
@@ -164,24 +152,35 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
 
         public static Parser<String> SingleLineComment()
         {
-            Char[] newLines = NewLineCharacters().ToArray();
+            return Parse.String("//").Then(_ => Parse.AnyChar.Except(NewLineCharacter()).Many().Text());
+        }
 
-            return Parse.String("//").Then(_ => Parse.Char(x => !newLines.Contains(x), "not newline").Many().Text());
+        public static Parser<String> NewLine()
+        {
+            return Parse.String("\u000D") // Carriage return character
+                .Or(Parse.String("\u000A")) // Line feed character
+                .Or(Parse.String("\u000D\u000A")) // Carriage return character followed by line feed character
+                .Or(Parse.String("\u0085")) // Next line character
+                .Or(Parse.String("\u2028")) // Line separator character
+                .Or(Parse.String("\u2029")) // Paragraph separator character
+                .Text();
         }
 
         public static Parser<Char> NewLineCharacter()
         {
-            Char[] newLines = NewLineCharacters().ToArray();
-
-            return Parse.Char(newLines.Contains, "newline");
+            return Parse.Char('\u000D') // Carriage return character
+                .Or(Parse.Char('\u000A')) // Line feed character
+                .Or(Parse.Char('\u0085')) // Next line character
+                .Or(Parse.Char('\u2028')) // Line separator character
+                .Or(Parse.Char('\u2029')); // Paragraph separator character
         }
 
         public static Parser<Char> WhiteSpaceCharacter()
         {
             return CharacterByUnicodeCategory(UnicodeCategory.SpaceSeparator)
-                .Or(Parse.Char('\u0009'))
-                .Or(Parse.Char('\u000B'))
-                .Or(Parse.Char('\u000C'));
+                .Or(Parse.Char('\u0009')) // Horizontal tab character
+                .Or(Parse.Char('\u000B')) // Vertical tab character
+                .Or(Parse.Char('\u000C')); // Form feed character
         }
 
         public static Parser<String> WhiteSpace()
@@ -230,8 +229,9 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
 
         public static Parser<T> Interleave<T>(this Parser<T> body)
         {
-            var interleave = (SingleLineComment()
-                .Or(NewLineCharacter().Many())
+            var interleave = (
+                    SingleLineComment()
+                .Or(NewLine())
                 .Or(WhiteSpace()))
                 .Many();
 
