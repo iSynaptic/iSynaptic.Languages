@@ -38,6 +38,18 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
         public static readonly String LanguageKeyword = "language";
         public static readonly String InterleaveKeyword = "interleave";
 
+        private static IEnumerable<Char> NewLineCharacters()
+        {
+            return new[]
+            {
+                '\u000D',
+                '\u000A',
+                '\u0085',
+                '\u2028',
+                '\u2029'
+            };
+        }
+
         public static IEnumerable<String> Keywords()
         {
             return new[]
@@ -150,6 +162,33 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
                 .Or(Parse.Char('@').Then(_ => IdentifierOrKeyword()));
         }
 
+        public static Parser<String> SingleLineComment()
+        {
+            Char[] newLines = NewLineCharacters().ToArray();
+
+            return Parse.String("//").Then(_ => Parse.Char(x => !newLines.Contains(x), "not newline").Many().Text());
+        }
+
+        public static Parser<Char> NewLineCharacter()
+        {
+            Char[] newLines = NewLineCharacters().ToArray();
+
+            return Parse.Char(newLines.Contains, "newline");
+        }
+
+        public static Parser<Char> WhiteSpaceCharacter()
+        {
+            return CharacterByUnicodeCategory(UnicodeCategory.SpaceSeparator)
+                .Or(Parse.Char('\u0009'))
+                .Or(Parse.Char('\u000B'))
+                .Or(Parse.Char('\u000C'));
+        }
+
+        public static Parser<String> WhiteSpace()
+        {
+            return WhiteSpaceCharacter().Many().Text();
+        }
+
         private static Parser<T> Concept<T>(String keyword, Func<String, T> selector)
         {
             return from k in Parse.String(keyword)
@@ -201,9 +240,16 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
             return Parse.Char(c => categories.Contains(Char.GetUnicodeCategory(c)), "characterByUnicodeCategory");
         }
 
-        private static Parser<T> Interleave<T>(this Parser<T> source )
+        public static Parser<T> Interleave<T>(this Parser<T> body)
         {
-            return source.Token();
+            var interleave = (SingleLineComment()
+                .Or(NewLineCharacter().Many())
+                .Or(WhiteSpace()))
+                .Many();
+
+            return 
+                Parse.SelectMany(
+                    Parse.SelectMany(interleave, _ => body, (_, b) => b), b => interleave, (b, _) => b);
         }
 
         public static Parser<V> SelectMany<T, U, V>(this Parser<T> source, Func<T, Parser<U>> selector, Func<T, U, V> projector)

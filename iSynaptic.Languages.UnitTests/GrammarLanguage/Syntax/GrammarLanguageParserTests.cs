@@ -20,11 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System;
 using System.Linq;
 using FluentAssertions;
 using NUnit.Framework;
 using Sprache;
 using iSynaptic.Commons;
+using iSynaptic.Commons.Linq;
 
 namespace iSynaptic.Languages.GrammarLanguage.Syntax
 {
@@ -90,18 +92,75 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
         }
 
         [Test]
+        public void NamespaceDeclaration_CanParseWithInnerSingleLineComment()
+        {
+            var result = Parser.NamespaceDeclaration()(new Input(@"namespace Foo {
+    // This is a single line comment.
+}"));
+
+            var ns = GetResult(result);
+
+            ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
+            ns.HasValue.Should().BeTrue("no value");
+            ns.Value.Name.Should().Be("Foo");
+        }
+
+        [Test]
         public void NamespaceDeclaration_CanParseWithOneLanguage()
         {
             var result = Parser.NamespaceDeclaration()(new Input("namespace Foo { language Bar { } }"));
 
             var ns = GetResult(result);
 
-            ns.HasValue.Should().BeTrue();
+            ns.HasValue.Should().BeTrue(ns.Observations.Delimit(""));
             ns.Value.Name.Should().Be("Foo");
 
             ns.Value.Languages.Should().NotBeNull();
             ns.Value.Languages.Should().HaveCount(1);
             ns.Value.Languages.ElementAt(0).Name.Should().Be("Bar");
+        }
+
+        [Test]
+        public void SingleLineComment_CanParse()
+        {
+            var result = Parser.SingleLineComment()(new Input("//This is a test."));
+
+            var ns = GetResult(result);
+
+            ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
+            ns.HasValue.Should().BeTrue("no value");
+            ns.Value.Should().Be("This is a test.");
+        }
+
+        [Test]
+        public void WhiteSpace_CanParseSomeWhiteSpace()
+        {
+            string input = "  \t    \t   ";
+            var result = Parser.WhiteSpace()(new Input(input));
+
+            var ns = GetResult(result);
+
+            ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
+            ns.HasValue.Should().BeTrue("no value");
+            ns.Value.Should().Be(input);
+        }
+
+        [Test]
+        public void Interleave_ShouldDiscardWhiteSpaceAndSingleLineComment()
+        {
+            string input = @"       Foo   
+// This is a comment.
+          ";
+
+            var rule = Parse.String("Foo").Text().Interleave().End();
+
+            var result = rule(new Input(input));
+
+            var ns = GetResult(result);
+
+            ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
+            ns.HasValue.Should().BeTrue("no value");
+            ns.Value.Should().Be("Foo");
         }
 
         private Result<T, string> GetResult<T>(IResult<T> result)
