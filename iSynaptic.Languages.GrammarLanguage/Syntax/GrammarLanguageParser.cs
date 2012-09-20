@@ -29,111 +29,187 @@ using System.Linq;
 
 namespace iSynaptic.Languages.GrammarLanguage.Syntax
 {
-    internal static class ParserExtensions
+    public static class GrammarLanguageParser
     {
-        public static Parser<V> SelectMany<T, U, V>(this Parser<T> source, Func<T, Parser<U>> selector, Func<T,U,V> projector)
+        public static readonly String BaseKeyword = "base";
+        public static readonly String UsingKeyword = "using";
+
+        public static readonly String NamespaceKeyword = "namespace";
+        public static readonly String LanguageKeyword = "language";
+        public static readonly String InterleaveKeyword = "interleave";
+
+        public static IEnumerable<String> Keywords()
         {
-            return Parse.SelectMany(source.Token(), selector, projector);
+            return new[]
+            {
+                BaseKeyword,
+                UsingKeyword,
+                NamespaceKeyword,
+                LanguageKeyword,
+                InterleaveKeyword
+            };
         }
-    }
 
-    public class GrammarLanguageParser
-    {
-        public GrammarLanguageParser()
+        public static Parser<String> InheritsOperator() { return Parse.String(":").Text(); }
+
+        public static Parser<String> BlockStart() { return Parse.String("{").Text().Named("block start"); }
+        public static Parser<String> BlockEnd() { return Parse.String("}").Text().Named("block end"); }
+        public static Parser<String> StatementEnd() { return Parse.String(";").Text(); }
+
+        public static Parser<NamespaceDeclaration> NamespaceDeclaration()
         {
-            BlockStart = Parse.String("{").Text();
-            BlockEnd = Parse.String("}").Text();
+            return BlockedConcept(
+                NamespaceKeyword,
+                LanguageDeclaration().Many(),
+                (id, langs) => new NamespaceDeclaration(id, langs));
+        }
 
-            NamespaceKeyword = Token("namespace");
-            LanguageKeyword = Token("language");
+        public static Parser<LanguageDeclaration> LanguageDeclaration()
+        {
+            return BlockedConceptWithInheritance(
+                LanguageKeyword,
+                Parse.Return(new Unit()),
+                (id, baseLanguage, u) => new LanguageDeclaration(id))
+                .Named("language");
+        }
 
-            LetterCharacter = CharacterByUnicodeCategory(
+        public static Parser<Char> LetterCharacter()
+        {
+            return CharacterByUnicodeCategory(
                 UnicodeCategory.UppercaseLetter,
                 UnicodeCategory.LowercaseLetter,
                 UnicodeCategory.TitlecaseLetter,
                 UnicodeCategory.ModifierLetter,
                 UnicodeCategory.OtherLetter,
                 UnicodeCategory.LetterNumber);
-
-            DecimalDigitCharacter = CharacterByUnicodeCategory(
-                UnicodeCategory.DecimalDigitNumber);
-
-            ConnectingCharacter = CharacterByUnicodeCategory(
-                UnicodeCategory.ConnectorPunctuation);
-
-            CombiningCharacter = CharacterByUnicodeCategory(
-                UnicodeCategory.NonSpacingMark, 
-                UnicodeCategory.SpacingCombiningMark);
-
-            FormattingCharacter = CharacterByUnicodeCategory(
-                UnicodeCategory.Format);
-
-            IdentifierPartCharacter = 
-                    LetterCharacter
-                .Or(DecimalDigitCharacter)
-                .Or(ConnectingCharacter)
-                .Or(CombiningCharacter)
-                .Or(FormattingCharacter);
-
-            IdentifierStartCharacter = LetterCharacter
-                .Or(Parse.Char('_'));
-
-            IdentifierOrKeyword = IdentifierStartCharacter
-                .Once()
-                .Concat(IdentifierPartCharacter.Many())
-                .Text();
-
-            LanguageDeclaration = BlockedUnitDeclaration(
-                LanguageKeyword,
-                Parse.Return(new Unit()),
-                (id, u) => new LanguageDeclaration(id));
-
-            NamespaceDeclaration = BlockedUnitDeclaration(
-                NamespaceKeyword, 
-                LanguageDeclaration.Many(), 
-                (id, langs) => new NamespaceDeclaration(id, langs));
         }
 
-        public Parser<String> NamespaceKeyword { get; private set; }
-        public Parser<String> LanguageKeyword { get; private set; }
-
-        public Parser<NamespaceDeclaration> NamespaceDeclaration { get; private set; }
-        public Parser<LanguageDeclaration> LanguageDeclaration { get; private set; }
-
-        public Parser<Char> LetterCharacter { get; private set;}
-        public Parser<Char> DecimalDigitCharacter { get; private set; }
-        public Parser<Char> ConnectingCharacter { get; private set; }
-        public Parser<Char> CombiningCharacter { get; private set; }
-        public Parser<Char> FormattingCharacter { get; private set; }
-
-        public Parser<Char> IdentifierPartCharacter { get; private set; }
-        public Parser<Char> IdentifierStartCharacter { get; private set; }
-
-        public Parser<String> IdentifierOrKeyword { get; private set; }
-
-        public Parser<String> BlockStart { get; private set; }
-        public Parser<String> BlockEnd { get; private set; }
-
-        public Parser<T> BlockedUnitDeclaration<T, TBody>(Parser<String> keyword, Parser<TBody> body, Func<String, TBody, T> selector)
+        public static Parser<Char> DecimalDigitCharacter()
         {
-            return from k in keyword
-                   from id in IdentifierOrKeyword
-                   from blockStart in BlockStart
-                   from b in body
-                   from blockEnd in BlockEnd
+            return CharacterByUnicodeCategory(
+                UnicodeCategory.DecimalDigitNumber);
+        }
+
+        public static Parser<Char> ConnectingCharacter()
+        {
+            return CharacterByUnicodeCategory(
+                UnicodeCategory.ConnectorPunctuation);
+        }
+
+        public static Parser<Char> CombiningCharacter()
+        {
+            return CharacterByUnicodeCategory(
+                UnicodeCategory.NonSpacingMark,
+                UnicodeCategory.SpacingCombiningMark);
+        }
+
+        public static Parser<Char> FormattingCharacter()
+        {
+            return CharacterByUnicodeCategory(
+                UnicodeCategory.Format);
+        }
+
+        public static Parser<Char> IdentifierPartCharacter()
+        {
+            return LetterCharacter()
+                .Or(DecimalDigitCharacter())
+                .Or(ConnectingCharacter())
+                .Or(CombiningCharacter())
+                .Or(FormattingCharacter());
+        }
+
+        public static Parser<Char> IdentifierStartCharacter()
+        {
+            return LetterCharacter()
+                .Or(Parse.Char('_'));
+        }
+
+        public static Parser<String> IdentifierOrKeyword()
+        {
+            return IdentifierStartCharacter()
+                .Once()
+                .Concat(IdentifierPartCharacter().Many())
+                .Text();
+        }
+
+        public static Parser<String> Keyword()
+        {
+            return IdentifierOrKeyword()
+                .Where(x => Keywords().Contains(x));
+        }
+
+        public static Parser<String> AvailableIdentifier()
+        {
+            return IdentifierOrKeyword()
+                .Where(x => !Keywords().Contains(x));
+        }
+
+        public static Parser<String> Identifier()
+        {
+            return AvailableIdentifier()
+                .Or(Parse.Char('@').Then(_ => IdentifierOrKeyword()));
+        }
+
+        private static Parser<T> Concept<T>(String keyword, Func<String, T> selector)
+        {
+            return from k in Parse.String(keyword)
+                   from id in Identifier()
+                   from statementEnd in StatementEnd()
+                   select selector(id);
+        }
+
+        private static Parser<T> ConceptWithInheritance<T>(String keyword, Func<String, Maybe<String>, T> selector)
+        {
+            return from k in Parse.String(keyword)
+                   from id in Identifier()
+                   from @base in InheritsOperator().Interleave().Then(_ => Identifier().Select(x => x.ToMaybe()))
+                        .Or(Parse.Return(Maybe<String>.NoValue))
+                   from statementEnd in StatementEnd()
+                   select selector(id, @base);
+        }
+
+        private static Parser<T> BlockedConcept<T, TBody>(String keyword, Parser<TBody> body, Func<String, TBody, T> selector)
+        {
+            return from k in Parse.String(keyword)
+                   from id in Identifier()
+                   from b in Blocked(body)
                    select selector(id, b);
         }
 
-        private Parser<Char> CharacterByUnicodeCategory(params UnicodeCategory[] categories)
+        private static Parser<T> BlockedConceptWithInheritance<T, TBody>(String keyword, Parser<TBody> body, Func<String, Maybe<String>, TBody, T> selector)
+        {
+            return from k in Parse.String(keyword)
+                   from id in Identifier()
+                   from @base in InheritsOperator().Interleave().Then(_ => Identifier().Select(x => x.ToMaybe()))
+                        .Or(Parse.Return(Maybe<String>.NoValue))
+                   from b in Blocked(body)
+                   select selector(id, @base, b);
+        }
+
+        private static Parser<T> Blocked<T>(Parser<T> body)
+        {
+            return from blockStart in BlockStart()
+                   from b in body
+                   from blockEnd in BlockEnd()
+                   select b;
+        }
+
+        private static Parser<Char> CharacterByUnicodeCategory(params UnicodeCategory[] categories)
         {
             Guard.NotNull(categories, "categories");
 
             return Parse.Char(c => categories.Contains(Char.GetUnicodeCategory(c)), "characterByUnicodeCategory");
         }
 
-        private Parser<String> Token(String literal)
+        private static Parser<T> Interleave<T>(this Parser<T> source )
         {
-            return Parse.String(literal).Text();
+            return source.Token();
         }
+
+        public static Parser<V> SelectMany<T, U, V>(this Parser<T> source, Func<T, Parser<U>> selector, Func<T, U, V> projector)
+        {
+            return Parse.SelectMany(source.Interleave(), selector, projector);
+        }
+
    }
 }
