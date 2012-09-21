@@ -134,6 +134,45 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
         }
 
         [Test]
+        public void DelimitedComment_CanParse()
+        {
+            var result = Parser.DelimitedComment()(new Input("/*This is a test.*/"));
+
+            var ns = GetResult(result);
+
+            ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
+            ns.HasValue.Should().BeTrue("no value");
+            ns.Value.Should().Be("This is a test.");
+        }
+
+        [Test]
+        public void DelimitedComment_CanParseMultiLineComment()
+        {
+            var result = Parser.DelimitedComment()(new Input(@"/*This is a test.
+This is another test.*/"));
+
+            var ns = GetResult(result);
+
+            ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
+            ns.HasValue.Should().BeTrue("no value");
+            ns.Value.Should().Be("This is a test.\r\nThis is another test.");
+        }
+
+        [Test]
+        public void DelimitedComment_CanParseMultiLineCommentWithAsterisksAtTheBeginningOfEachLine()
+        {
+            var result = Parser.DelimitedComment()(new Input(@"/*This is a test.
+*This is another test.
+*This is test three.*/"));
+
+            var ns = GetResult(result);
+
+            ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
+            ns.HasValue.Should().BeTrue("no value");
+            ns.Value.Should().Be("This is a test.\r\nThis is another test.\r\nThis is test three.");
+        }
+
+        [Test]
         public void WhiteSpace_CanParseSomeWhiteSpace()
         {
             string input = "  \t    \t   ";

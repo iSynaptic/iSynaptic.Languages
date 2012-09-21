@@ -26,6 +26,7 @@ using System.Globalization;
 using Sprache;
 using iSynaptic.Commons;
 using System.Linq;
+using iSynaptic.Commons.Linq;
 
 namespace iSynaptic.Languages.GrammarLanguage.Syntax
 {
@@ -155,6 +156,21 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
             return Parse.String("//").Then(_ => Parse.AnyChar.Except(NewLineCharacter()).Many().Text());
         }
 
+        public static Parser<String> DelimitedComment()
+        {
+            var notSlashOrAsterisk = Parse.AnyChar.Except(Parse.Char('/').Or(Parse.Char('*')));
+            var asterisks = Parse.Char('*').AtLeastOnce();
+
+            var commentSection = Parse.Char('/')
+                .Or(asterisks.Many().Then(_ => notSlashOrAsterisk));
+
+            var commentText = commentSection.AtLeastOnce().Text();
+
+            return Parse.String("/*")
+                .Then(_ => commentText)
+                .Then(x => asterisks.Then(_ => Parse.Char('/')).Then(_ => Parse.Return(x)));
+        }
+
         public static Parser<String> NewLine()
         {
             return Parse.String("\u000D") // Carriage return character
@@ -231,6 +247,7 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
         {
             var interleave = (
                     SingleLineComment()
+                .Or(DelimitedComment().Then(_ => Parse.Return<String>(null)))
                 .Or(NewLine())
                 .Or(WhiteSpace()))
                 .Many();
