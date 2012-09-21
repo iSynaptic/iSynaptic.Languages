@@ -1,21 +1,26 @@
-﻿using System;
+﻿//using System;
 
-namespace iSynaptic.Languages
+namespace iSynaptic//.Languages
 {
 	language OtherLanguage
 	{
+		/*
 		Tab = "\t";
+		*/
 	}
 
 	language BaseLanguage
 	{
+		/*
 		Space = " ";
 		WhiteSpace = Space+;
+		*/
 	}
 
 	language ExampleLanguage : BaseLanguage
-		interleave WhiteSpace <-- this causes all rules in this language to have WhiteSpace interleaved
+		// interleave WhiteSpace <-- this causes all rules in this language to have WhiteSpace interleaved
 	{
+		/*
 		interleave base.WhiteSpace <-- trumps language interleaving
 		{
 			Main interleave WhiteSpace <-- trumps interleave block
@@ -39,5 +44,6 @@ namespace iSynaptic.Languages
 
 		override WhiteSpace = OtherLanguage.Tab+ | base.WhiteSpace;
 		BaseWhiteSpace = base.WhiteSpace;
+		*/
 	}
 }

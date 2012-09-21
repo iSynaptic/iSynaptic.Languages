@@ -20,12 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System;
 using System.Linq;
 using FluentAssertions;
 using NUnit.Framework;
 using Sprache;
-using iSynaptic.Commons;
 using iSynaptic.Commons.Linq;
 
 namespace iSynaptic.Languages.GrammarLanguage.Syntax
@@ -33,9 +31,8 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
     using Parser = GrammarLanguageParser;
 
     [TestFixture]
-    public class GrammarLanguageParserTests
+    public class GrammarLanguageParserTests : ParserTestFixture
     {
-
         [Test]
         public void Identifier_CanParseSimpleIdentifier()
         {
@@ -201,21 +198,6 @@ This is another test.*/"));
             ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
             ns.HasValue.Should().BeTrue("no value");
             ns.Value.Should().Be("Foo");
-        }
-
-        private Result<T, string> GetResult<T>(IResult<T> result)
-        {
-            var success = result as ISuccess<T>;
-            if(success != null)
-                return success.Result.ToResult();
-
-            var failure = result as IFailure<T>;
-            if(failure != null)
-            {
-                return Result.Failure(failure.ToString());
-            }
-
-            return Result.Failure("Unexpected result.");
         }
     }
 }
