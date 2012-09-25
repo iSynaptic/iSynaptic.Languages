@@ -20,18 +20,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System;
 using System.Linq;
 using FluentAssertions;
 using NUnit.Framework;
 using Sprache;
 using iSynaptic.Commons.Linq;
+using iSynaptic.Languages.GrammarLanguage.SyntacticModel;
 
-namespace iSynaptic.Languages.GrammarLanguage.Syntax
+// ReSharper disable InconsistentNaming
+
+namespace iSynaptic.Languages.GrammarLanguage
 {
-    using Parser = GrammarLanguageParser;
-
     [TestFixture]
-    public class GrammarLanguageParserTests : ParserTestFixture
+    public class ParserTests : ParserTestFixture
     {
         [Test]
         public void Identifier_CanParseSimpleIdentifier()
@@ -40,8 +42,9 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
 
             var identifier = GetResult(result);
 
-            identifier.HasValue.Should().BeTrue();
-            identifier.Value.Should().Be("Foo");
+            identifier.HasValue.Should().BeTrue(identifier.Observations.Delimit("\r\n"));
+            identifier.Value.Kind.Should().Be(SyntaxKind.IdentifierToken);
+            identifier.Value.Text.Should().Be("Foo");
         }
 
         [Test]
@@ -56,14 +59,15 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
         }
 
         [Test]
-        public void Identifier_CanParseKeywordWithiteralPrefix()
+        public void Identifier_CanParseKeywordWithLiteralPrefix()
         {
-            var result = Parser.Identifier()(new Input("@namespace"));
+            var result = Parser.Identifier()(new Input("@" + SyntaxFacts.NamespaceKeyword));
 
             var identifier = GetResult(result);
 
-            identifier.HasValue.Should().BeTrue();
-            identifier.Value.Should().Be("namespace");
+            identifier.HasValue.Should().BeTrue(identifier.Observations.Delimit("\r\n"));
+            identifier.Value.Kind.Should().Be(SyntaxKind.IdentifierToken);
+            identifier.Value.Text.Should().Be("@" + SyntaxFacts.NamespaceKeyword);
         }
 
         [Test]
@@ -74,7 +78,8 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
             var identifierOrKeyword = GetResult(result);
 
             identifierOrKeyword.HasValue.Should().BeTrue();
-            identifierOrKeyword.Value.Should().Be("Foo");
+            identifierOrKeyword.Value.Kind.Should().Be(SyntaxKind.IdentifierToken);
+            identifierOrKeyword.Value.Text.Should().Be("Foo");
         }
 
         [Test]
@@ -85,7 +90,7 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
             var ns = GetResult(result);
 
             ns.HasValue.Should().BeTrue();
-            ns.Value.Name.Should().Be("Foo");
+            ns.Value.Name.Text.Should().Be("Foo");
         }
 
         [Test]
@@ -99,7 +104,7 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
 
             ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
             ns.HasValue.Should().BeTrue("no value");
-            ns.Value.Name.Should().Be("Foo");
+            ns.Value.Name.Text.Should().Be("Foo");
         }
 
         [Test]
@@ -111,79 +116,86 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
 
             ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
             ns.HasValue.Should().BeTrue("no value");
-            ns.Value.Name.Should().Be("Foo");
+            ns.Value.Name.Text.Should().Be("Foo");
 
             ns.Value.Languages.Should().NotBeNull();
             ns.Value.Languages.Should().HaveCount(1, "missing language");
-            ns.Value.Languages.ElementAt(0).Name.Should().Be("Bar");
+            ns.Value.Languages.ElementAt(0).Name.Text.Should().Be("Bar");
         }
 
         [Test]
         public void SingleLineComment_CanParse()
         {
-            var result = Parser.SingleLineComment()(new Input("//This is a test."));
+            String input = "// This is a test.";
+            var result = Parser.SingleLineComment()(new Input(input));
 
             var ns = GetResult(result);
 
             ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
             ns.HasValue.Should().BeTrue("no value");
-            ns.Value.Should().Be("This is a test.");
+            ns.Value.Text.Should().Be(input);
         }
 
         [Test]
-        public void DelimitedComment_CanParse()
+        public void MultiLineComment_CanParse()
         {
-            var result = Parser.DelimitedComment()(new Input("/*This is a test.*/"));
+            String input = "/*This is a test.****/";
+
+            var result = Parser.MultiLineComment()(new Input(input));
 
             var ns = GetResult(result);
 
             ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
             ns.HasValue.Should().BeTrue("no value");
-            ns.Value.Should().Be("This is a test.");
+            ns.Value.Text.Should().Be(input);
         }
 
         [Test]
-        public void DelimitedComment_CanParseMultiLineComment()
+        public void MultiLineComment_CanParseMultiLineComment()
         {
-            var result = Parser.DelimitedComment()(new Input(@"/*This is a test.
-This is another test.*/"));
+            String input = @"/*This is a test.
+This is another test.*/";
+            
+            var result = Parser.MultiLineComment()(new Input(input));
 
             var ns = GetResult(result);
 
             ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
             ns.HasValue.Should().BeTrue("no value");
-            ns.Value.Should().Be("This is a test.\r\nThis is another test.");
+            ns.Value.Text.Should().Be(input);
         }
 
         [Test]
-        public void DelimitedComment_CanParseMultiLineCommentWithAsterisksAtTheBeginningOfEachLine()
+        public void MultiLineComment_CanParseMultiLineCommentWithAsterisksAtTheBeginningOfEachLine()
         {
-            var result = Parser.DelimitedComment()(new Input(@"/*This is a test.
+            String input = @"/*This is a test.
 *This is another test.
-*This is test three.*/"));
+*This is test three.*/";
+
+            var result = Parser.MultiLineComment()(new Input(input));
 
             var ns = GetResult(result);
 
             ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
             ns.HasValue.Should().BeTrue("no value");
-            ns.Value.Should().Be("This is a test.\r\nThis is another test.\r\nThis is test three.");
+            ns.Value.Text.Should().Be(input);
         }
 
         [Test]
-        public void WhiteSpace_CanParseSomeWhiteSpace()
+        public void Whitespace_CanParseSomeWhitespace()
         {
             string input = "  \t    \t   ";
-            var result = Parser.WhiteSpace()(new Input(input));
+            var result = Parser.Whitespace()(new Input(input));
 
             var ns = GetResult(result);
 
             ns.WasSuccessful.Should().BeTrue(ns.Observations.Delimit("\r\n"));
             ns.HasValue.Should().BeTrue("no value");
-            ns.Value.Should().Be(input);
+            ns.Value.Text.Should().Be(input);
         }
 
         [Test]
-        public void Interleave_ShouldDiscardWhiteSpaceAndSingleLineComment()
+        public void Interleave_ShouldDiscardWhitespaceAndSingleLineComment()
         {
             string input = @"       Foo   
 // This is a comment.

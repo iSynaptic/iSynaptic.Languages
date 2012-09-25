@@ -13,17 +13,17 @@ namespace iSynaptic//.Languages
 	{
 		/*
 		Space = " ";
-		WhiteSpace = Space+;
+		Whitespace = Space+;
 		*/
 	}
 
 	language ExampleLanguage : BaseLanguage
-		// interleave WhiteSpace <-- this causes all rules in this language to have WhiteSpace interleaved
+		// interleave Whitespace* <-- this causes all rules in this language to have Whitespace interleaved
 	{
 		/*
-		interleave base.WhiteSpace <-- trumps language interleaving
+		interleave base.Whitespace* <-- trumps language interleaving
 		{
-			Main interleave WhiteSpace <-- trumps interleave block
+			Main interleave Whitespace* <-- trumps interleave block
 				= Greeting
 				  (Comma Greeting?)[0..2]
 				  Adjective?
@@ -42,8 +42,8 @@ namespace iSynaptic//.Languages
 		Jordan = "Jordan";
 		Comma = ",";
 
-		override WhiteSpace = OtherLanguage.Tab+ | base.WhiteSpace;
-		BaseWhiteSpace = base.WhiteSpace;
+		override Whitespace = OtherLanguage.Tab+ | base.Whitespace;
+		BaseWhitespace = base.Whitespace;
 		*/
 	}
 }

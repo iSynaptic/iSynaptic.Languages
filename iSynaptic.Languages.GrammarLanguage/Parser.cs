@@ -26,51 +26,32 @@ using System.Globalization;
 using Sprache;
 using iSynaptic.Commons;
 using System.Linq;
-using iSynaptic.Commons.Linq;
+using iSynaptic.Languages.GrammarLanguage.SyntacticModel;
 
-namespace iSynaptic.Languages.GrammarLanguage.Syntax
+namespace iSynaptic.Languages.GrammarLanguage
 {
-    public static class GrammarLanguageParser
+    public static class Parser
     {
-        public static readonly String BaseKeyword = "base";
-        public static readonly String UsingKeyword = "using";
-
-        public static readonly String NamespaceKeyword = "namespace";
-        public static readonly String LanguageKeyword = "language";
-        public static readonly String InterleaveKeyword = "interleave";
-
-        public static IEnumerable<String> Keywords()
-        {
-            return new[]
-            {
-                BaseKeyword,
-                UsingKeyword,
-                NamespaceKeyword,
-                LanguageKeyword,
-                InterleaveKeyword
-            };
-        }
-
         public static Parser<String> InheritsOperator() { return Parse.String(":").Text(); }
 
         public static Parser<String> BlockStart() { return Parse.String("{").Text().Named("block start"); }
         public static Parser<String> BlockEnd() { return Parse.String("}").Text().Named("block end"); }
         public static Parser<String> StatementEnd() { return Parse.String(";").Text(); }
 
-        public static Parser<NamespaceDeclaration> NamespaceDeclaration()
+        public static Parser<NamespaceDeclarationSyntax> NamespaceDeclaration()
         {
             return Concept(
-                NamespaceKeyword,
+                SyntaxKind.NamespaceKeyword,
                 LanguageDeclaration().Many().Blocked(),
-                (id, _, langs) => new NamespaceDeclaration(id, langs));
+                (id, _, langs) => new NamespaceDeclarationSyntax(id, langs));
         }
 
-        public static Parser<LanguageDeclaration> LanguageDeclaration()
+        public static Parser<LanguageDeclarationSyntax> LanguageDeclaration()
         {
             return Concept(
-                LanguageKeyword,
+                SyntaxKind.LanguageKeyword,
                 Parse.Return(new Unit()).Blocked(),
-                (id, baseLanguage, u) => new LanguageDeclaration(id))
+                (id, baseLanguage, u) => new LanguageDeclarationSyntax(id))
                 .Named("language");
         }
 
@@ -125,53 +106,53 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
                 .Or(Parse.Char('_'));
         }
 
-        public static Parser<String> IdentifierOrKeyword()
+        public static Parser<SyntaxToken> IdentifierOrKeyword()
         {
-            return IdentifierStartCharacter()
+            var keywords = SyntaxFacts.GetKeywords().ToArray();
+
+            var identifier = IdentifierStartCharacter()
                 .Once()
                 .Concat(IdentifierPartCharacter().Many())
                 .Text();
+            
+            return identifier
+                .Or(Parse.Char('@').Then(_ => identifier.Select(x => "@" + x)))
+                .Select(x => keywords.Contains(x) && x[0] != '@' ? Syntax.Keyword(x) : Syntax.Identifier(x));
         }
 
-        public static Parser<String> Keyword()
+        public static Parser<SyntaxToken> Keyword()
         {
             return IdentifierOrKeyword()
-                .Where(x => Keywords().Contains(x));
+                .Where(x => x.Kind != SyntaxKind.IdentifierToken);
         }
 
-        public static Parser<String> AvailableIdentifier()
+        public static Parser<SyntaxToken> Keyword(SyntaxKind keyword)
+        {
+            return Keyword()
+                .Where(x => x.Kind == keyword);
+        }
+
+        public static Parser<SyntaxToken> Identifier()
         {
             return IdentifierOrKeyword()
-                .Where(x => !Keywords().Contains(x));
+                .Where(x => x.Kind == SyntaxKind.IdentifierToken);
         }
 
-        public static Parser<String> Identifier()
+        public static Parser<SyntaxTrivia> SingleLineComment()
         {
-            return AvailableIdentifier()
-                .Or(Parse.Char('@').Then(_ => IdentifierOrKeyword()));
+            return Parse.String("//")
+                .Then(_ => Parse.AnyChar.Except(NewLineCharacter()).Many().Text())
+                .Select(txt => Syntax.SingleLineComment("//" + txt));
         }
 
-        public static Parser<String> SingleLineComment()
+        public static Parser<SyntaxTrivia> MultiLineComment()
         {
-            return Parse.String("//").Then(_ => Parse.AnyChar.Except(NewLineCharacter()).Many().Text());
-        }
-
-        public static Parser<String> DelimitedComment()
-        {
-            var notSlashOrAsterisk = Parse.AnyChar.Except(Parse.Char('/').Or(Parse.Char('*')));
-            var asterisks = Parse.Char('*').AtLeastOnce();
-
-            var commentSection = Parse.Char('/')
-                .Or(asterisks.Many().Then(_ => notSlashOrAsterisk));
-
-            var commentText = commentSection.AtLeastOnce().Text();
-
             return Parse.String("/*")
-                .Then(_ => commentText)
-                .Then(x => asterisks.Then(_ => Parse.Char('/')).Then(_ => Parse.Return(x)));
+                .Then(_ => Parse.AnyChar.Until(Parse.String("*/")).Text())
+                .Select(txt => Syntax.MultiLineComment("/*" + txt + "*/"));
         }
 
-        public static Parser<String> NewLine()
+        public static Parser<SyntaxTrivia> NewLine()
         {
             return Parse.String("\u000D") // Carriage return character
                 .Or(Parse.String("\u000A")) // Line feed character
@@ -179,7 +160,8 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
                 .Or(Parse.String("\u0085")) // Next line character
                 .Or(Parse.String("\u2028")) // Line separator character
                 .Or(Parse.String("\u2029")) // Paragraph separator character
-                .Text();
+                .Text()
+                .Select(Syntax.NewLine);
         }
 
         public static Parser<Char> NewLineCharacter()
@@ -191,7 +173,7 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
                 .Or(Parse.Char('\u2029')); // Paragraph separator character
         }
 
-        public static Parser<Char> WhiteSpaceCharacter()
+        public static Parser<Char> WhitespaceCharacter()
         {
             return CharacterByUnicodeCategory(UnicodeCategory.SpaceSeparator)
                 .Or(Parse.Char('\u0009')) // Horizontal tab character
@@ -199,30 +181,31 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
                 .Or(Parse.Char('\u000C')); // Form feed character
         }
 
-        public static Parser<String> WhiteSpace()
+        public static Parser<SyntaxTrivia> Whitespace()
         {
-            return WhiteSpaceCharacter().Many().Text();
+            return WhitespaceCharacter().AtLeastOnce().Text()
+                .Select(Syntax.Whitespace);
         }
 
-        public static Parser<T> Concept<T, TDefinition>(String keyword, Parser<TDefinition> definition, Func<String, TDefinition, T> selector)
+        public static Parser<T> Concept<T, TDefinition>(SyntaxKind keyword, Parser<TDefinition> definition, Func<SyntaxToken, TDefinition, T> selector)
         {
             return ConceptCore(keyword, false, definition, (id, @base, def) => selector(id, def));
         }
 
-        public static Parser<T> Concept<T, TDefinition>(String keyword, Parser<TDefinition> definition, Func<String, Maybe<String>, TDefinition, T> selector)
+        public static Parser<T> Concept<T, TDefinition>(SyntaxKind keyword, Parser<TDefinition> definition, Func<SyntaxToken, Maybe<SyntaxToken>, TDefinition, T> selector)
         {
             return ConceptCore(keyword, true, definition, selector);
         }
 
-        private static Parser<T> ConceptCore<T, TDefinition>(String keyword, bool canInherit, Parser<TDefinition> definition, Func<String, Maybe<String>, TDefinition, T> selector)
+        private static Parser<T> ConceptCore<T, TDefinition>(SyntaxKind keyword, bool canInherit, Parser<TDefinition> definition, Func<SyntaxToken, Maybe<SyntaxToken>, TDefinition, T> selector)
         {
-            return from k in Parse.String(keyword)
+            return from k in Keyword(keyword)
                    from id in Identifier()
 
                    from @base in canInherit
                         ? InheritsOperator().Interleave().Then(_ => Identifier().Select(x => x.ToMaybe()))
-                            .Or(Parse.Return(Maybe<String>.NoValue))
-                        : Parse.Return(Maybe<String>.NoValue)
+                            .Or(Parse.Return(Maybe<SyntaxToken>.NoValue))
+                        : Parse.Return(Maybe<SyntaxToken>.NoValue)
 
                    from def in definition
                    select selector(id, @base, def);
@@ -247,9 +230,9 @@ namespace iSynaptic.Languages.GrammarLanguage.Syntax
         {
             var interleave = (
                     SingleLineComment()
-                .Or(DelimitedComment().Then(_ => Parse.Return<String>(null)))
+                .Or(MultiLineComment())
                 .Or(NewLine())
-                .Or(WhiteSpace()))
+                .Or(Whitespace()))
                 .Many();
 
             return 

@@ -20,15 +20,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-namespace iSynaptic.Languages.GrammarLanguage.Syntax
+using System;
+
+namespace iSynaptic.Languages.GrammarLanguage.SyntacticModel
 {
-    public class LanguageDeclaration
+    public struct SyntaxTrivia
     {
-        public LanguageDeclaration(string name)
+        private readonly SyntaxToken _Token;
+        private readonly Internal.SyntaxTrivia _Internal;
+
+        internal SyntaxTrivia(SyntaxToken token, Internal.SyntaxTrivia @internal)
         {
-            Name = name;
+            _Token = token;
+            _Internal = @internal;
         }
 
-        public string Name { get; private set; }
+        public String Text { get { return _Internal.Text; } }
     }
 }

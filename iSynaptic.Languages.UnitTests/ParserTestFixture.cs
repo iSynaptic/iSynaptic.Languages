@@ -40,11 +40,24 @@ namespace iSynaptic.Languages
 
         protected IEnumerable<String> GetEmbeddedFiles(params String[] files)
         {
+            return GetEmbeddedFiles(x => files.Any(x.EndsWith));
+        }
+
+        protected IEnumerable<String> GetEmbeddedFiles(Func<String, Boolean> predicate)
+        {
             Assembly asm = Assembly.GetExecutingAssembly();
 
-            return files
-                .Select(f => asm.GetManifestResourceStream(String.Format("{0}.{1}", GetType().Namespace, f)))
-                .Select(s => new StreamReader(s).ReadToEnd());
+            return asm.GetManifestResourceNames()
+                .Where(predicate)
+                .Select(asm.GetManifestResourceStream)
+                .Select(s =>
+                {
+                    using(s)
+                    using(var r = new StreamReader(s))
+                    {
+                        return r.ReadToEnd();
+                    }
+                });
         }
 
         protected Result<T, string> GetResult<T>(IResult<T> result)

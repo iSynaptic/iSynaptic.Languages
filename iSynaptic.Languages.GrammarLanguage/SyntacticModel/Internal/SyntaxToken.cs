@@ -21,49 +21,32 @@
 // THE SOFTWARE.
 
 using System;
-using FluentAssertions;
-using NUnit.Framework;
-using Sprache;
-using iSynaptic.Commons;
-using iSynaptic.Commons.Linq;
 
-namespace iSynaptic.Languages.GrammarLanguage.Syntax
+namespace iSynaptic.Languages.GrammarLanguage.SyntacticModel.Internal
 {
-    [TestFixture]
-    public class ExampleGrammarTests : ParserTestFixture
+    internal class SyntaxToken : SyntaxNode
     {
-        private readonly String _Input;
-        private readonly Result<NamespaceDeclaration, String> _ParseResult;
-
-        public ExampleGrammarTests()
+        public SyntaxToken(SyntaxKind kind)
+            : base(kind)
         {
-            _Input = GetEmbeddedFile("Example.grammar");
-            _ParseResult = GetResult(GrammarLanguageParser.NamespaceDeclaration()(new Input(_Input)));
         }
 
-        [Test]
-        public void Input_IsNotNullOrZeroLength()
+        public virtual String Text
         {
-            _Input.Should().NotBeNullOrEmpty();
+            get { return SyntaxFacts.GetText(Kind); }
+        }
+    }
+
+    internal class SyntaxIdentifier : SyntaxToken
+    {
+        private readonly string _Text;
+
+        public SyntaxIdentifier(String text)
+            : base(SyntaxKind.IdentifierToken)
+        {
+            _Text = text;
         }
 
-        [Test]
-        public void ParseResult_WasSuccessful()
-        {
-            _ParseResult.WasSuccessful.Should().BeTrue(_ParseResult.Observations.Delimit(Environment.NewLine));
-        }
-
-        [Test]
-        public void ParseResult_HasValue()
-        {
-            _ParseResult.HasValue.Should().BeTrue();
-        }
-
-
-
-        private NamespaceDeclaration Result
-        {
-            get { return _ParseResult.Value; }
-        }
+        public override string Text { get { return _Text; } }
     }
 }

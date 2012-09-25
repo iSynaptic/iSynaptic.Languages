@@ -20,19 +20,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System.Collections.Generic;
+using System;
 
-namespace iSynaptic.Languages.GrammarLanguage.Syntax
+namespace iSynaptic.Languages.GrammarLanguage.SyntacticModel
 {
-    public class NamespaceDeclaration
+    public struct TextSpan
     {
-        public NamespaceDeclaration(string name, IEnumerable<LanguageDeclaration> languages)
+        private readonly Int32 _Start;
+        private readonly Int32 _Length;
+
+        public TextSpan(Int32 start, Int32 length)
         {
-            Name = name;
-            Languages = languages;
+            if(start < 0) throw new ArgumentOutOfRangeException("start", "Text span start must be greater than or equal to zero (0).");
+            if(length < 0) throw new ArgumentOutOfRangeException("length", "Text span length must be greater than or equal to zero (0).");
+
+            _Start = start;
+            _Length = length;
         }
 
-        public string Name { get; private set; }
-        public IEnumerable<LanguageDeclaration> Languages { get; private set; }
+        public Int32 Start { get { return _Start; } }
+        public Int32 Length { get { return _Length; } }
+
+        public Int32 End { get { return Start + Length; }}
     }
 }

@@ -43,9 +43,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Syntax\GrammarLanguageParser.cs" />
-    <Compile Include="Syntax\LanguageDeclaration.cs" />
-    <Compile Include="Syntax\NamespaceDeclaration.cs" />
+    <Compile Include="Parser.cs" />
+    <Compile Include="SyntacticModel\Internal\SyntaxNode.cs" />
+    <Compile Include="SyntacticModel\Internal\SyntaxToken.cs" />
+    <Compile Include="SyntacticModel\Internal\SyntaxTrivia.cs" />
+    <Compile Include="SyntacticModel\LanguageDeclarationSyntax.cs" />
+    <Compile Include="SyntacticModel\NamespaceDeclarationSyntax.cs" />
+    <Compile Include="SyntacticModel\SyntaxFacts.cs" />
+    <Compile Include="SyntacticModel\SyntaxKind.cs" />
+    <Compile Include="SyntacticModel\SyntaxNode.cs" />
+    <Compile Include="SyntacticModel\SyntaxToken.cs" />
+    <Compile Include="SyntacticModel\SyntaxTrivia.cs" />
+    <Compile Include="SyntacticModel\TextSpan.cs" />
+    <Compile Include="Syntax.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
