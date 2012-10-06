@@ -40,7 +40,13 @@ namespace iSynaptic.Languages.GrammarLanguage.SyntacticModel
         NamespaceKeyword,
         LanguageKeyword,
 
-        IdentifierToken
+        IdentifierToken,
+
+        #endregion
+
+        #region Nodes
+
+        NamespaceDeclaration
 
         #endregion
     }

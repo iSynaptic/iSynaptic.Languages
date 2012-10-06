@@ -26,27 +26,35 @@ namespace iSynaptic.Languages.GrammarLanguage.SyntacticModel.Internal
 {
     internal class SyntaxToken : SyntaxNode
     {
+        private readonly Int32 _FullWidth;
+
         public SyntaxToken(SyntaxKind kind)
             : base(kind)
         {
+            _FullWidth = SyntaxFacts.GetText(kind).Length;
         }
 
         public virtual String Text
         {
             get { return SyntaxFacts.GetText(Kind); }
         }
+
+        public override int FullWidth { get { return _FullWidth; } }
     }
 
     internal class SyntaxIdentifier : SyntaxToken
     {
-        private readonly string _Text;
+        private readonly String _Text;
+        private readonly Int32 _FullWidth;
 
         public SyntaxIdentifier(String text)
             : base(SyntaxKind.IdentifierToken)
         {
             _Text = text;
+            _FullWidth = text.Length;
         }
 
-        public override string Text { get { return _Text; } }
+        public override String Text { get { return _Text; } }
+        public override int FullWidth { get { return _FullWidth; } }
     }
 }

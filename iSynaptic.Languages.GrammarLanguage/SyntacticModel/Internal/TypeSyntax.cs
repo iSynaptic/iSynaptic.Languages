@@ -20,23 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System;
-
 namespace iSynaptic.Languages.GrammarLanguage.SyntacticModel.Internal
 {
-    internal class SyntaxTrivia : SyntaxNode
+    internal abstract class TypeSyntax : ExpressionSyntax
     {
-        private readonly String _Text;
-        private readonly Int32 _FullWidth;
-
-        public SyntaxTrivia(SyntaxKind kind, String text)
-            : base(kind)
+        protected TypeSyntax(SyntaxKind kind) : base(kind)
         {
-            _Text = text;
-            _FullWidth = text.Length;
         }
-
-        public String Text { get { return _Text; } }
-        public override Int32 FullWidth { get { return _FullWidth; } }
     }
 }

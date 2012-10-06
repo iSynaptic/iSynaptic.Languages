@@ -44,9 +44,12 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Parser.cs" />
+    <Compile Include="SyntacticModel\Internal\ExpressionSyntax.cs" />
+    <Compile Include="SyntacticModel\Internal\NameSyntax.cs" />
     <Compile Include="SyntacticModel\Internal\SyntaxNode.cs" />
     <Compile Include="SyntacticModel\Internal\SyntaxToken.cs" />
     <Compile Include="SyntacticModel\Internal\SyntaxTrivia.cs" />
+    <Compile Include="SyntacticModel\Internal\TypeSyntax.cs" />
     <Compile Include="SyntacticModel\LanguageDeclarationSyntax.cs" />
     <Compile Include="SyntacticModel\NamespaceDeclarationSyntax.cs" />
     <Compile Include="SyntacticModel\SyntaxFacts.cs" />

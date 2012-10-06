@@ -42,5 +42,78 @@ namespace iSynaptic.Languages.GrammarLanguage.SyntacticModel.Internal
         {
             return null;
         }
+
+        public abstract Int32 FullWidth { get; }
+
+        public virtual Int32 LeadingWidth
+        {
+            get 
+            { 
+                var token = GetFirstToken(true);
+                return token != null 
+                    ? token.LeadingWidth 
+                    : 0;
+            }
+        }
+
+        public virtual Int32 TrailingWidth
+        {
+            get
+            {
+                var token = GetLastToken(true);
+                return token != null
+                    ? token.TrailingWidth
+                    : 0;
+            }
+        }
+
+        public virtual Int32 Width
+        {
+            get { return FullWidth - LeadingWidth - TrailingWidth; }
+        }
+
+        public SyntaxToken GetFirstToken()
+        {
+            return GetFirstToken(false);
+        }
+
+        public SyntaxToken GetFirstToken(bool includeZeroWidth)
+        {
+            Int32 slotCount = GetSlotCount();
+            Int32 index = 0;
+
+            while (index < slotCount)
+            {
+                var token = GetSlot(index) as SyntaxToken;
+                if(token != null && (includeZeroWidth || token.FullWidth != 0))
+                    return token;
+
+                index++;
+            }
+
+            return null;
+        }
+
+        public SyntaxToken GetLastToken()
+        {
+            return GetLastToken(false);
+        }
+
+        public SyntaxToken GetLastToken(bool includeZeroWidth)
+        {
+            Int32 slotCount = GetSlotCount();
+            Int32 index = slotCount - 1;
+
+            while (index >= 0)
+            {
+                var token = GetSlot(index) as SyntaxToken;
+                if (token != null && (includeZeroWidth || token.FullWidth != 0))
+                    return token;
+
+                index--;
+            }
+
+            return null;
+        }
     }
 }

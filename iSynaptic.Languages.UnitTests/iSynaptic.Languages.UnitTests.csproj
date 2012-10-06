@@ -53,6 +53,7 @@
     <Compile Include="GrammarLanguage\ExampleGrammarTests.cs" />
     <Compile Include="GrammarLanguage\ParserTests.cs" />
     <Compile Include="GrammarLanguage\SyntacticModel\Internal\DesignTests.cs" />
+    <Compile Include="GrammarLanguage\SyntacticModel\Internal\SyntaxNodeTests.cs" />
     <Compile Include="ParserTestFixture.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TypesLanguage\TypesLanguageParserTests.cs" />
