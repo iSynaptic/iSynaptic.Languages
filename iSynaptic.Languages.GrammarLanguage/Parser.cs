@@ -244,6 +244,5 @@ namespace iSynaptic.Languages.GrammarLanguage
         {
             return Parse.SelectMany(source.Interleave(), selector, projector);
         }
-
-   }
+    }
 }
