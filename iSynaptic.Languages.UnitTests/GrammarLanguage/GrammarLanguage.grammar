@@ -1,0 +1,26 @@
+﻿namespace iSynaptic.Languages
+{
+	language GrammarLanguage
+	{
+		syntax token Identifier(string name);
+		
+		syntax token NamespaceKeyword;
+		syntax token LanguageKeyword;
+		syntax token InterleaveKeyword;
+		syntax token SyntaxKeyword;
+		syntax token TokenKeyword;
+		syntax token NodeKeyword;
+
+		syntax node LanguageDeclaration(LanguageKeyword,
+										Identifier name,
+										OpenBrace,
+										LanguageMember* members,
+										CloseBrace);
+
+		syntax node NamespaceDeclaration(NamespaceKeyword,
+										 Identifier name,
+										 OpenBrace,
+										 LanguageDeclaration* members
+										 CloseBrace);
+	}
+}

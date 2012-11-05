@@ -60,6 +60,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="GrammarLanguage\Example.grammar" />
+    <None Include="GrammarLanguage\GrammarLanguage.grammar" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
