@@ -42,7 +42,7 @@
       <HintPath>..\packages\NUnit.2.6.1\lib\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="Sprache">
-      <HintPath>..\packages\Sprache.1.10.0.11\lib\net40\Sprache.dll</HintPath>
+      <HintPath>..\lib\Sprache.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -50,6 +50,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GrammarLanguage\Bootstrap\ParserTests.cs" />
     <Compile Include="GrammarLanguage\ExampleGrammarTests.cs" />
     <Compile Include="GrammarLanguage\ParserTests.cs" />
     <Compile Include="GrammarLanguage\SyntacticModel\Internal\DesignTests.cs" />
@@ -60,7 +61,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="GrammarLanguage\Example.grammar" />
-    <None Include="GrammarLanguage\GrammarLanguage.grammar" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

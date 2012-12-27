@@ -36,12 +36,12 @@ namespace iSynaptic.Languages.GrammarLanguage
     public class ExampleGrammarTests : ParserTestFixture
     {
         private readonly String _Input;
-        private readonly Result<NamespaceDeclarationSyntax, String> _ParseResult;
+        private readonly IResult<NamespaceDeclarationSyntax> _ParseResult;
 
         public ExampleGrammarTests()
         {
             _Input = GetEmbeddedFile("Example.grammar");
-            _ParseResult = GetResult(Parser.NamespaceDeclaration()(new Input(_Input)));
+            _ParseResult = Parser.NamespaceDeclaration()(new Input(_Input));
         }
 
         [Test]
@@ -53,13 +53,7 @@ namespace iSynaptic.Languages.GrammarLanguage
         [Test]
         public void ParseResult_WasSuccessful()
         {
-            _ParseResult.WasSuccessful.Should().BeTrue(_ParseResult.Observations.Delimit(Environment.NewLine));
-        }
-
-        [Test]
-        public void ParseResult_HasValue()
-        {
-            _ParseResult.HasValue.Should().BeTrue();
+            _ParseResult.WasSuccessful.Should().BeTrue(_ParseResult.Expectations.Delimit(Environment.NewLine));
         }
 
         private NamespaceDeclarationSyntax Result

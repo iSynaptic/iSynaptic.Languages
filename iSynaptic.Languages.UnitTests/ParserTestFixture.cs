@@ -59,20 +59,5 @@ namespace iSynaptic.Languages
                     }
                 });
         }
-
-        protected Result<T, string> GetResult<T>(IResult<T> result)
-        {
-            var success = result as ISuccess<T>;
-            if (success != null)
-                return success.Result.ToResult();
-
-            var failure = result as IFailure<T>;
-            if (failure != null)
-            {
-                return Result.Failure(failure.ToString());
-            }
-
-            return Result.Failure("Unexpected result.");
-        }
     }
 }

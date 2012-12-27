@@ -21,23 +21,50 @@
 // THE SOFTWARE.
 
 using System;
-using FluentAssertions;
-using NUnit.Framework;
-using Sprache;
-using iSynaptic.Languages.TypesLanguage.Syntax;
+using iSynaptic.Commons.Linq;
 
-namespace iSynaptic.Languages.TypesLanguage
+namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    [TestFixture]
-    public class TypesLanguageParserTests
+    public abstract class NameSyntax
     {
-        [Test]
-        public void FalseKeyword_Production()
-        {
-            var result = TypesLanguageParser
-                .FalseKeyword(new Input("false"));
+    }
 
-            result.Value.Should().Be("false");
+    public abstract class UnqualifiedNameSyntax : NameSyntax
+    {
+        public String Identifier { get; set; }
+    }
+
+    public sealed class IdentifierNameSyntax : UnqualifiedNameSyntax
+    {
+        public override string ToString()
+        {
+            return Identifier;
+        }
+    }
+
+    public sealed class GenericNameSyntax : UnqualifiedNameSyntax
+    {
+        private NameSyntax[] _typeArguments;
+
+        public NameSyntax[] TypeArguments { get { return _typeArguments ?? new NameSyntax[0]; } set { _typeArguments = value; } }
+
+        public override string ToString()
+        {
+            return String.Format("{0}<{1}>", Identifier, TypeArguments.Delimit(", "));
+        }
+    }
+
+    public sealed class QualifiedNameSyntax : NameSyntax
+    {
+        public NameSyntax Left { get; set; }
+        public UnqualifiedNameSyntax Right { get; set; }
+
+        public override string ToString()
+        {
+            if(Left != null)
+                return String.Format("{0}.{1}", Left, Right);
+
+            return Right.ToString();
         }
     }
 }

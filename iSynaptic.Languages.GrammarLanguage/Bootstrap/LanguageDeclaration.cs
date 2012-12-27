@@ -20,24 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System;
-using FluentAssertions;
-using NUnit.Framework;
-using Sprache;
-using iSynaptic.Languages.TypesLanguage.Syntax;
-
-namespace iSynaptic.Languages.TypesLanguage
+namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    [TestFixture]
-    public class TypesLanguageParserTests
+    public class LanguageDeclaration : INamespaceMember
     {
-        [Test]
-        public void FalseKeyword_Production()
-        {
-            var result = TypesLanguageParser
-                .FalseKeyword(new Input("false"));
+        public IdentifierNameSyntax Name { get; set; }
 
-            result.Value.Should().Be("false");
-        }
+        NameSyntax INamespaceMember.Name { get { return Name; } }
     }
 }

@@ -1,0 +1,46 @@
+﻿namespace iSynaptic.Languages
+{
+	language GrammarLanguage
+	{
+		token Identifier = [a-zA-Z][0-9a-zA-Z_]*;
+
+		token UsingKeyword = "using";
+		token AbstractKeyword = "abstract";
+		token NamespaceKeyword = "namespace";
+		token LanguageKeyword = "language";
+		token InterleaveKeyword = "interleave";
+		token TokenKeyword = "token";
+		token NodeKeyword = "node";
+
+		token OpenBrace = "{";
+		token CloseBrace = "}";
+		token OpenBracket = "[";
+		token CloseBracket = "]";
+		token QuestionMark = "?";
+		token PlusSign = "+";
+		token MinusSign = "-";
+		token Asterisk = "*";
+		token EqualsSign = "=";
+		token SemiColon = ";";
+		token Underscore = "_";
+		token RangeOperator = "..";
+		token Period = ".";
+
+		abstract node NameSyntax;
+		abstract node LanguageMember;
+
+		node LanguageDeclaration(
+			LanguageKeyword,
+			Identifier name,
+			OpenBrace,
+			LanguageMember* members,
+			CloseBrace);
+
+		node NamespaceDeclaration(
+			NamespaceKeyword,
+			Identifier name,
+			OpenBrace,
+			LanguageDeclaration* members
+			CloseBrace);
+	}
+}
