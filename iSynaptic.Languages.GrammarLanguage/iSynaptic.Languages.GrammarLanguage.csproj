@@ -48,7 +48,13 @@
     <Compile Include="Bootstrap\LanguageDeclaration.cs" />
     <Compile Include="Bootstrap\NamespaceDeclaration.cs" />
     <Compile Include="Bootstrap\NameSyntax.cs" />
+    <Compile Include="Bootstrap\NodeDeclaration.cs" />
+    <Compile Include="Bootstrap\NodeMemberDeclaration.cs" />
     <Compile Include="Bootstrap\Parser.cs" />
+    <Compile Include="Bootstrap\TokenDeclaration.cs" />
+    <Compile Include="Bootstrap\TokenExpression.cs" />
+    <Compile Include="Bootstrap\TypeCardinality.cs" />
+    <Compile Include="Bootstrap\TypeReference.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="SyntacticModel\Internal\ExpressionSyntax.cs" />

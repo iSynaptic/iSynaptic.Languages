@@ -26,9 +26,9 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
     public class NamespaceDeclaration : INamespaceMember
     {
-        private List<INamespaceMember> _languages;
+        private List<INamespaceMember> _members;
 
         public NameSyntax Name { get; set; }
-        public List<INamespaceMember> Members { get { return _languages ?? (_languages = new List<INamespaceMember>()); } set { _languages = value; } } 
+        public List<INamespaceMember> Members { get { return _members ?? (_members = new List<INamespaceMember>()); } set { _members = value; } } 
     }
 }

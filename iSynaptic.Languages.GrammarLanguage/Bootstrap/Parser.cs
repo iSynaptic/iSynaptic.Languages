@@ -45,18 +45,91 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 
         public static Parser<INamespaceMember> NamespaceMember()
         {
-            return ((Parser<INamespaceMember>)Namespace()).Or(Language());
+            return ((Parser<INamespaceMember>) Namespace()).Or(Language());
         }
 
         public static Parser<LanguageDeclaration> Language()
         {
             return from keyword in Keyword("language")
                    from name in IdentifierName()
-                   from members in Blocked(Interleave())
+                   from members in Blocked(LanguageMember().Many())
                    select new LanguageDeclaration
                    {
+                       Name = name,
+                       Members = members.ToList()
+                   };
+        }
+
+        public static Parser<ILanguageMember> LanguageMember()
+        {
+            return ((Parser<ILanguageMember>) Token()).Or(Node());
+        }
+
+        public static Parser<NodeDeclaration> Node()
+        {
+            return from @abstract in Keyword("abstract").ZeroOrOne()
+                   from keyword in Keyword("node")
+                   from name in UnqualifiedName()
+                   from members in NodeBody().ZeroOrOne().Select(x => x.Squash())
+                   from end in StatementEnd()
+                   select new NodeDeclaration
+                   {
+                       IsAbstract = @abstract.HasValue,
                        Name = name
                    };
+        }
+
+        public static Parser<IEnumerable<NodeMemberDeclaration>> NodeBody()
+        {
+            return from sParen in ParenStart()
+                   from members in NodeMember().Delimit(Comma(), 0)
+                   from eParen in ParenEnd()
+                   select members;
+        }
+
+        public static Parser<NodeMemberDeclaration> NodeMember()
+        {
+            return from type in TypeReference()
+                   from name in IdentifierName().ZeroOrOne()
+                   select new NodeMemberDeclaration { Name = name, Type = type };
+        }
+
+        public static Parser<TypeReference> TypeReference()
+        {
+            return from name in Name()
+                   from cardinality in TypeCardinality()
+                   select new TypeReference {Cardinality = cardinality, Name = name};
+        }
+
+        public static Parser<TypeCardinality> TypeCardinality()
+        {
+            return QuestionMark().Select(x => Bootstrap.TypeCardinality.ZeroOrOne)
+                .Or(Asterisk().Select(x => Bootstrap.TypeCardinality.ZeroOrMore))
+                .Or(PlusSign().Select(x => Bootstrap.TypeCardinality.OneOrMore))
+                .Or(Parse.Return(Bootstrap.TypeCardinality.One));
+        }
+
+        public static Parser<TokenDeclaration> Token()
+        {
+            return from keyword in Keyword("token")
+                   from name in IdentifierName()
+                   from eq in EqualsSign()
+                   from exp in TokenExpression()
+                   from end in StatementEnd()
+                   select new TokenDeclaration { Name = name, Expression = exp };
+        }
+
+        public static Parser<TokenExpression> TokenExpression()
+        {
+            return LiteralTokenExpression();
+        }
+
+        public static Parser<LiteralTokenExpression> LiteralTokenExpression()
+        {
+            return from startQuote in Quote()
+                   from content in Parse.CharExcept('"').Many().Text()
+                   from endQuote in Quote()
+                   select new LiteralTokenExpression { Literal = content };
         }
 
         public static Parser<NameSyntax> Name()
@@ -66,7 +139,7 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 
         public static Parser<QualifiedNameSyntax> QualifiedName()
         {
-            return Delimit(UnqualifiedName(), Period(), 1)
+            return UnqualifiedName().Delimit(Period(), 2)
                 .Select(x => x.Aggregate((QualifiedNameSyntax)null, (l, r) => new QualifiedNameSyntax { Left = l, Right = r }));
         }
 
@@ -79,7 +152,7 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
         {
             return from id in IdentifierOrKeyword()
                    from start in AngleStart()
-                   from types in Delimit(Name(), Comma(), 0)
+                   from types in Name().Delimit(Comma(), 1)
                    from end in AngleEnd()
                    select new GenericNameSyntax
                    {
@@ -95,14 +168,24 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 
         public static Parser<String> InheritsOperator() { return Parse.String(":").Text(); }
 
-        public static Parser<String> BlockStart() { return Parse.String("{").Text().Named("block start"); }
-        public static Parser<String> BlockEnd() { return Parse.String("}").Text().Named("block end"); }
+        public static Parser<String> BlockStart() { return Parse.String("{").Text(); }
+        public static Parser<String> BlockEnd() { return Parse.String("}").Text(); }
+
+        public static Parser<String> ParenStart() { return Parse.String("(").Text(); }
+        public static Parser<String> ParenEnd() { return Parse.String(")").Text(); }
 
         public static Parser<String> AngleStart() { return Parse.String("<").Text(); }
         public static Parser<String> AngleEnd() { return Parse.String(">").Text(); }
 
+        public static Parser<String> Quote() { return Parse.String("\"").Text(); }
         public static Parser<String> Period() { return Parse.String(".").Text(); }
         public static Parser<String> Comma() { return Parse.String(",").Text(); }
+        public static Parser<String> EqualsSign() { return Parse.String("=").Text(); }
+        public static Parser<String> PlusSign() { return Parse.String("+").Text(); }
+
+        public static Parser<String> QuestionMark() { return Parse.String("?").Text(); }
+        public static Parser<String> Asterisk() { return Parse.String("*").Text(); }
+        
 
         public static Parser<String> StatementEnd() { return Parse.String(";").Text(); }
 
@@ -260,26 +343,31 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
             return Parse.Char(c => categories.Contains(Char.GetUnicodeCategory(c)), "characterByUnicodeCategory");
         }
 
-        private static Parser<IEnumerable<T>> Delimit<T, TDelimiter>(this Parser<T> parser, Parser<TDelimiter> delimiter, int minimumRepeats)
+        private static Parser<IEnumerable<T>> Delimit<T, TDelimiter>(this Parser<T> parser, Parser<TDelimiter> delimiter, int minimum)
         {
-            return from result in parser
+            return (from result in parser.ZeroOrOne()
                    from remaining in (from d in delimiter from r in parser select r).Many()
-                   where remaining.Count() >= minimumRepeats
-                   select new[]{result}.Concat(remaining);
+                   select result.ToEnumerable().Concat(remaining))
+                .Where(x => x.Count() >= minimum);
         }
 
-        public static Parser<IEnumerable<String>> Interleave()
+        private static Parser<Maybe<T>> ZeroOrOne<T>(this Parser<T> parser)
         {
-            return (SingleLineComment()
+            return parser.Select(x => x.ToMaybe())
+                         .Or(Parse.Return(Maybe<T>.NoValue));
+        }
+
+        public static Parser<String> Interleave()
+        {
+            return SingleLineComment()
                 .Or(MultiLineComment())
                 .Or(NewLine())
-                .Or(Whitespace()))
-                .Many();
+                .Or(Whitespace());
         }
 
         public static Parser<T> Interleaved<T>(this Parser<T> body)
         {
-            var interleave = Interleave();
+            var interleave = Interleave().Many();
 
             return
                 Parse.SelectMany(

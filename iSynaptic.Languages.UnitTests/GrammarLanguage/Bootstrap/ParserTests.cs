@@ -20,10 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using NUnit.Framework;
-using Sprache;
 using iSynaptic.Commons;
 using iSynaptic.Commons.Linq;
 
@@ -33,39 +34,87 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
     public class ParserTests
     {
         [Test]
+        public void FullParseTest()
+        {
+            string input = 
+@"namespace iSynaptic.Languages
+{ 
+    language GrammarLanguage
+    {
+		token UsingKeyword = ""using"";
+		token AbstractKeyword = ""abstract"";
+		token NamespaceKeyword = ""namespace"";
+		token LanguageKeyword = ""language"";
+		token InterleaveKeyword = ""interleave"";
+		token TokenKeyword = ""token"";
+		token NodeKeyword = ""node"";
+
+		token OpenBrace = ""{"";
+		token CloseBrace = ""}"";
+		token OpenBracket = ""["";
+		token CloseBracket = ""]"";
+		token QuestionMark = ""?"";
+		token PlusSign = ""+"";
+		token MinusSign = ""-"";
+		token Asterisk = ""*"";
+		token EqualsSign = ""="";
+		token SemiColon = "";"";
+		token Underscore = ""_"";
+		token RangeOperator = "".."";
+		token Period = ""."";
+
+		abstract node NameSyntax;
+		abstract node LanguageMember;
+
+		node LanguageDeclaration(
+			LanguageKeyword,
+			Identifier name,
+			OpenBrace,
+			LanguageMember* members,
+			CloseBrace
+        );
+
+		node NamespaceDeclaration(
+			NamespaceKeyword,
+			Identifier name,
+			OpenBrace,
+			LanguageDeclaration* members,
+			CloseBrace
+        );
+
+    }
+}";
+            var value = Parser.Namespace().SuccessfullyParse(input);
+            value.Should().NotBeNull();
+        }
+
+        [Test]
         public void Namespace_WithEmptyBody_ReturnsCorrectly()
         {
-            var results = Parser.Namespace()(new Input("namespace Foo.Bar.Baz { }"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            results.Value.Name.ToString().Should().Be("Foo.Bar.Baz");
+            var value = Parser.Namespace().SuccessfullyParse("namespace Foo.Bar.Baz { }");
+            value.Name.ToString().Should().Be("Foo.Bar.Baz");
         }
 
         [Test]
         public void Namespace_WithNestedNamespace_ReturnsCorrectly()
         {
-            var results = Parser.Namespace()(new Input("namespace Foo.Bar { namespace Baz { } }"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            results.Value.Members[0].Name.ToString().Should().Be("Baz");
+            var value = Parser.Namespace().SuccessfullyParse("namespace Foo.Bar { namespace Baz { } }");
+            value.Members[0].Name.ToString().Should().Be("Baz");
         }
 
         [Test]
         public void Namespace_WithLanguage()
         {
-            var results = Parser.Namespace()(new Input("namespace Foo { language Bar { } }"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            results.Value.Members[0].Name.ToString().Should().Be("Bar");
+            var value = Parser.Namespace().SuccessfullyParse("namespace Foo { language Bar { } }");
+            value.Members[0].Name.ToString().Should().Be("Bar");
         }
 
         [Test]
         public void Namespace_WithLanguageInNestedNamespace()
         {
-            var results = Parser.Namespace()(new Input("namespace Foo { namespace Bar { language Baz { } } }"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            results.Value
+            var value = Parser.Namespace().SuccessfullyParse("namespace Foo { namespace Bar { language Baz { } } }");
+            
+            value
                 .Members[0]
                 .As<NamespaceDeclaration>()
                 .Members[0]
@@ -73,21 +122,66 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
         }
 
         [Test]
+        public void Language_ReturnsCorrectly()
+        {
+            var value = Parser.Language().SuccessfullyParse("language Foo { }");
+            value.Name.ToString().Should().Be("Foo");
+        }
+
+        [Test]
+        public void Language_WithLiteralTokenMember_ReturnsCorrectly()
+        {
+            var value = Parser.Language().SuccessfullyParse("language Foo { token Bar = \"Baz\"; }");
+
+            var token = value
+                .Members[0]
+                .As<TokenDeclaration>();
+
+            token.Name.ToString().Should().Be("Bar");
+            token.Expression.As<LiteralTokenExpression>().Literal.Should().Be("Baz");
+        }
+        
+        [Test]
+        public void NodeMember_ReturnsCorrectly()
+        {
+            var cardinalities = new Dictionary<TypeCardinality, String>
+            {
+                {TypeCardinality.One, ""},
+                {TypeCardinality.OneOrMore, "+"},
+                {TypeCardinality.ZeroOrMore, "*"},
+                {TypeCardinality.ZeroOrOne, "?"}
+            };
+
+            var combinations = from cardinality in cardinalities.Keys
+                               from hasName in new[] {true, false}
+                               let value = Parser.NodeMember().SuccessfullyParse(
+                                   String.Format("Identifier{0}{1}", cardinalities[cardinality], hasName ? " name" : ""))
+                               select new {Value = value, Cardinality = cardinality, HasName = hasName};
+
+
+            foreach (var combo in combinations)
+            {
+                combo.Value.Type.Name.ToString().Should().Be("Identifier");
+                combo.Value.Type.Cardinality.Should().Be(combo.Cardinality);
+                combo.Value.Name.HasValue.Should().Be(combo.HasName);
+
+                if (combo.HasName)
+                    combo.Value.Name.Value.ToString().Should().Be("name");
+            }
+        }
+
+        [Test]
         public void IdentifierName_ReturnsCorrectly()
         {
-            var results = Parser.IdentifierName()(new Input("testIdentifier"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            results.Value.Identifier.Should().Be("testIdentifier");
+            var value = Parser.IdentifierName().SuccessfullyParse("testIdentifier");
+            value.Identifier.Should().Be("testIdentifier");
         }
 
         [Test]
         public void GenericName_ReturnsCorrectly()
         {
-            var results = Parser.GenericName()(new Input("TestGeneric<One, Two>"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            var name = results.Value;
+            var name = Parser.GenericName().SuccessfullyParse("TestGeneric<One, Two>");
+            
             name.Identifier.Should().Be("TestGeneric");
             name.TypeArguments[0].As<IdentifierNameSyntax>().Identifier.Should().Be("One");
             name.TypeArguments[1].As<IdentifierNameSyntax>().Identifier.Should().Be("Two");
@@ -96,10 +190,8 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
         [Test]
         public void GenericName_WithRecursiveGenericNames_ReturnsCorrectly()
         {
-            var results = Parser.GenericName()(new Input("TestGeneric<One<Foo>, Two<Bar, Baz>>"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            var name = results.Value;
+            var name = Parser.GenericName().SuccessfullyParse("TestGeneric<One<Foo>, Two<Bar, Baz>>");
+            
             name.Identifier.Should().Be("TestGeneric");
 
             var one = name.TypeArguments[0].As<GenericNameSyntax>();
@@ -115,28 +207,22 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
         [Test]
         public void UnqualifiedName_WithIdentifierNameAsInput_ReturnsCorrectly()
         {
-            var results = Parser.UnqualifiedName()(new Input("testIdentifier"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            results.Value.As<IdentifierNameSyntax>().Identifier.Should().Be("testIdentifier");
+            var value = Parser.UnqualifiedName().SuccessfullyParse("testIdentifier");
+            value.As<IdentifierNameSyntax>().Identifier.Should().Be("testIdentifier");
         }
 
         [Test]
         public void Name_WithIdentifierNameAsInput_ReturnsCorrectly()
         {
-            var results = Parser.Name()(new Input("testIdentifier"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            results.Value.As<IdentifierNameSyntax>().Identifier.Should().Be("testIdentifier");
+            var value = Parser.Name().SuccessfullyParse("testIdentifier");
+            value.As<IdentifierNameSyntax>().Identifier.Should().Be("testIdentifier");
         }
 
         [Test]
         public void QualifiedName_WithIdentifierNamesAsInput_ReturnsCorrectly()
         {
-            var results = Parser.QualifiedName()(new Input("Foo.Bar.Baz"));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            results.Value.Recurse(x => x.Left.ToMaybe().OfType<QualifiedNameSyntax>())
+            var value = Parser.QualifiedName().SuccessfullyParse("Foo.Bar.Baz");
+            value.Recurse(x => x.Left.ToMaybe().OfType<QualifiedNameSyntax>())
                    .Select(x => x.Right)
                    .Select(x => x.Identifier)
                    .Reverse()
@@ -149,10 +235,8 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
         {
             string input = "NS1.NS2.NS3.Type1<NS1.NS2.NS3.Type2<NS1.NS2.NS3.Type4>, NS1.NS2.NS3.Type3<Type5, NS1.Type6>>";
 
-            var results = Parser.Name()(new Input(input));
-            results.WasSuccessful.Should().BeTrue(results.Message);
-
-            results.Value.ToString().Should().Be(input);
+            var value = Parser.Name().SuccessfullyParse(input);
+            value.ToString().Should().Be(input);
         }
     }
 }

@@ -20,17 +20,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System.Collections.Generic;
+using System;
 
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    public class LanguageDeclaration : INamespaceMember
+    public abstract class TokenExpression
     {
-        private List<ILanguageMember> _members;
- 
-        public IdentifierNameSyntax Name { get; set; }
-        public List<ILanguageMember> Members { get { return _members ?? (_members = new List<ILanguageMember>()); } set { _members = value; } } 
-
-        NameSyntax INamespaceMember.Name { get { return Name; } }
     }
+
+    public class LiteralTokenExpression : TokenExpression
+    {
+        public String Literal { get; set; }
+    }
+
 }

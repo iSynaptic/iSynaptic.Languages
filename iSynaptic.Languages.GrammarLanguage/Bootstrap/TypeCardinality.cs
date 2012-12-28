@@ -19,18 +19,13 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
-using System.Collections.Generic;
-
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    public class LanguageDeclaration : INamespaceMember
+    public enum TypeCardinality
     {
-        private List<ILanguageMember> _members;
- 
-        public IdentifierNameSyntax Name { get; set; }
-        public List<ILanguageMember> Members { get { return _members ?? (_members = new List<ILanguageMember>()); } set { _members = value; } } 
-
-        NameSyntax INamespaceMember.Name { get { return Name; } }
+        One,
+        ZeroOrOne,
+        ZeroOrMore,
+        OneOrMore
     }
 }

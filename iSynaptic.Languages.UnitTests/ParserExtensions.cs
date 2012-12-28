@@ -20,17 +20,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System.Collections.Generic;
+using FluentAssertions;
+using Sprache;
+using iSynaptic.Commons.Linq;
 
-namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
+namespace iSynaptic.Languages
 {
-    public class LanguageDeclaration : INamespaceMember
+    public static class ParserExtensions
     {
-        private List<ILanguageMember> _members;
- 
-        public IdentifierNameSyntax Name { get; set; }
-        public List<ILanguageMember> Members { get { return _members ?? (_members = new List<ILanguageMember>()); } set { _members = value; } } 
+        public static T SuccessfullyParse<T>(this Parser<T> parser, string input)
+        {
+            var results = parser(new Input(input));
+            results.WasSuccessful.Should().BeTrue("{0}. Expectations: {1} ({2}, {3})",
+                results.Message,
+                results.Expectations.Delimit(", "),
+                results.Remainder.Line,
+                results.Remainder.Column);
 
-        NameSyntax INamespaceMember.Name { get { return Name; } }
+            return results.Value;
+        }
     }
 }

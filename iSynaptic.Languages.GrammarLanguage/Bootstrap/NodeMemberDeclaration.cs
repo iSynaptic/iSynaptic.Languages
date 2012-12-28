@@ -20,17 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System.Collections.Generic;
+using iSynaptic.Commons;
 
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    public class LanguageDeclaration : INamespaceMember
+    public class NodeMemberDeclaration
     {
-        private List<ILanguageMember> _members;
- 
-        public IdentifierNameSyntax Name { get; set; }
-        public List<ILanguageMember> Members { get { return _members ?? (_members = new List<ILanguageMember>()); } set { _members = value; } } 
-
-        NameSyntax INamespaceMember.Name { get { return Name; } }
+        public TypeReference Type { get; set; }
+        public Maybe<IdentifierNameSyntax> Name { get; set; }
     }
 }
