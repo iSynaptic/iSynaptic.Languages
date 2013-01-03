@@ -21,24 +21,24 @@
 // THE SOFTWARE.
 
 using System.Collections.Generic;
-using iSynaptic.Commons.Linq;
 
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    public class NamespaceDeclaration : INamespaceMember
+    public class SyntaxTree : IVisitable<GrammarLanguageVisitor>
     {
-        private List<INamespaceMember> _members;
+        private List<UsingStatement> _usings;
+        private List<NamespaceDeclaration> _namespaces;
 
-        public NameSyntax Name { get; set; }
-        public List<INamespaceMember> Members { get { return _members ?? (_members = new List<INamespaceMember>()); } set { _members = value; } }
+        public List<UsingStatement> Usings { get { return _usings ?? (_usings = new List<UsingStatement>()); } set { _usings = value; } }
+        public List<NamespaceDeclaration> Namespaces { get { return _namespaces ?? (_namespaces = new List<NamespaceDeclaration>()); } set { _namespaces = value; } }
 
         public void Accept(GrammarLanguageVisitor visitor, AcceptMode mode)
         {
-            if (mode == AcceptMode.Self)
+            if(mode == AcceptMode.Self)
                 visitor.Visit(this);
 
-            if (mode == AcceptMode.Children)
-                visitor.Dispatch<INamespaceMember>(Members);
+            if(mode == AcceptMode.Children)
+                visitor.Dispatch<NamespaceDeclaration>(Namespaces);
         }
     }
 }

@@ -22,7 +22,7 @@
 
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    public interface ILanguageMember
+    public interface ILanguageMember : IVisitable<GrammarLanguageVisitor>
     {
         UnqualifiedNameSyntax Name { get; }
     }

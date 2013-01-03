@@ -1,6 +1,6 @@
 ﻿// The MIT License
 // 
-// Copyright (c) 2012 Jordan E. Terrell
+// Copyright (c) 2013 Jordan E. Terrell
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,49 +22,51 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
+using iSynaptic.Commons;
+using iSynaptic.Commons.Linq;
 
-namespace iSynaptic.Languages
+namespace iSynaptic.Languages.GrammarLanguage
 {
-    public abstract class ParserTestFixture
+    public abstract class Visitor<TVisitor>
+        where TVisitor : Visitor<TVisitor>
     {
-        protected String GetEmbeddedFile(String file)
+        private readonly Stack<Object> _path = new Stack<Object>();
+
+        public virtual void Dispatch<T>(T subject)
+            where T : IVisitable<TVisitor>
         {
-            return GetEmbeddedFiles(file)
-                .FirstOrDefault();
+            Dispatch<T>(new []{subject});
         }
 
-        protected String GetEmbeddedFile(Assembly assembly, String file)
+        public void Dispatch<T>(IEnumerable<T> subjects)
+            where T : IVisitable<TVisitor>
         {
-            return GetEmbeddedFiles(assembly, file)
-                .FirstOrDefault();
+            Dispatch(subjects, (x, a) => a(x.Value));
         }
 
-        protected IEnumerable<String> GetEmbeddedFiles(params String[] files)
+        public virtual void Dispatch<T>(IEnumerable<T> subjects, Action<Neighbors<T>, Action<T>> action)
+            where T : IVisitable<TVisitor>
         {
-            return GetEmbeddedFiles(Assembly.GetExecutingAssembly(), files);
-        }
-
-        protected IEnumerable<String> GetEmbeddedFiles(Assembly assembly, params String[] files)
-        {
-            return GetEmbeddedFiles(assembly, x => files.Any(x.EndsWith));
-        }
-
-        protected IEnumerable<String> GetEmbeddedFiles(Assembly assembly, Func<String, Boolean> predicate)
-        {
-            return assembly.GetManifestResourceNames()
-                .Where(predicate)
-                .Select(assembly.GetManifestResourceStream)
-                .Select(s =>
+            subjects
+                .Unless(x => NotInterestedIn(x))
+                .WithNeighbors()
+                .Run(x =>
                 {
-                    using(s)
-                    using(var r = new StreamReader(s))
-                    {
-                        return r.ReadToEnd();
-                    }
+                    _path.Push(x.Value);
+                    action(x, s => s.Accept((TVisitor) this, AcceptMode.Self));
+                    _path.Pop();
                 });
+        }
+
+        protected virtual bool NotInterestedIn(IVisitable<TVisitor> subject)
+        {
+            return false;
+        }
+
+        public IEnumerable<Object> Path
+        {
+            get { return _path.Reverse(); }
         }
     }
 }

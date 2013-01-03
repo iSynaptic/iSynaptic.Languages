@@ -1,6 +1,6 @@
 ﻿// The MIT License
 // 
-// Copyright (c) 2012 Jordan E. Terrell
+// Copyright (c) 2013 Jordan E. Terrell
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System.Collections.Generic;
-using iSynaptic.Commons.Linq;
+using System;
+using System.IO;
+using iSynaptic.Commons;
 
-namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
+namespace iSynaptic.Languages.GrammarLanguage
 {
-    public class NamespaceDeclaration : INamespaceMember
+    public class CodeBlock
     {
-        private List<INamespaceMember> _members;
+        private readonly StringWriter _writer;
+        private IndentingTextWriter _indentingWriter;
 
-        public NameSyntax Name { get; set; }
-        public List<INamespaceMember> Members { get { return _members ?? (_members = new List<INamespaceMember>()); } set { _members = value; } }
-
-        public void Accept(GrammarLanguageVisitor visitor, AcceptMode mode)
+        public CodeBlock(String fileName)
         {
-            if (mode == AcceptMode.Self)
-                visitor.Visit(this);
+            FileName = Guard.NotNullOrWhiteSpace(fileName, "fileName");
+            
+            _writer = new StringWriter();
+        }
 
-            if (mode == AcceptMode.Children)
-                visitor.Dispatch<INamespaceMember>(Members);
+        public String FileName { get; private set; }
+        public IndentingTextWriter Writer { get { return _indentingWriter ?? (_indentingWriter = new IndentingTextWriter(_writer, "    ")); } }
+
+        public void WriteTo(TextWriter writer)
+        {
+            Guard.NotNull(writer, "writer");
+
+            writer.Write(_writer.GetStringBuilder().ToString());
         }
     }
 }

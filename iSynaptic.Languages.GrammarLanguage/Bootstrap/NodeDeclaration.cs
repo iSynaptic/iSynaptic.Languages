@@ -21,12 +21,28 @@
 // THE SOFTWARE.
 
 using System;
+using System.Collections.Generic;
+using iSynaptic.Commons.Linq;
 
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
     public class NodeDeclaration : ILanguageMember
     {
-        public UnqualifiedNameSyntax Name { get; set; }
+        private List<NodeMemberDeclaration> _members;
+
         public Boolean IsAbstract { get; set; }
+        public UnqualifiedNameSyntax Name { get; set; }
+        public Boolean IsInterface { get; set; }
+
+        public List<NodeMemberDeclaration> Members { get { return _members ?? (_members = new List<NodeMemberDeclaration>()); } set { _members = value; } }
+
+        public void Accept(GrammarLanguageVisitor visitor, AcceptMode mode)
+        {
+            if (mode == AcceptMode.Self)
+                visitor.Visit(this);
+
+            if (mode == AcceptMode.Children)
+                visitor.Dispatch<NodeMemberDeclaration>(Members);
+        }
     }
 }

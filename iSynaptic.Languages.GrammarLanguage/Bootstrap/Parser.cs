@@ -26,11 +26,31 @@ using System.Globalization;
 using System.Linq;
 using Sprache;
 using iSynaptic.Commons;
+using iSynaptic.Commons.Linq;
 
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
     public static class Parser
     {
+        public static Parser<SyntaxTree> Start()
+        {
+            return from usings in UsingStatement().Many()
+                   from namespaces in Namespace().Many()
+                   select new SyntaxTree
+                   {
+                       Usings = usings.ToList(), 
+                       Namespaces = namespaces.ToList()
+                   };
+        }
+
+        public static Parser<UsingStatement> UsingStatement()
+        {
+            return from keyword in Keyword("using")
+                   from name in Name()
+                   from end in StatementEnd()
+                   select new UsingStatement { Identifier = name };
+        }
+
         public static Parser<NamespaceDeclaration> Namespace()
         {
             return from keyword in Keyword("namespace")
@@ -62,20 +82,22 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 
         public static Parser<ILanguageMember> LanguageMember()
         {
-            return ((Parser<ILanguageMember>) Token()).Or(Node());
+            return ((Parser<ILanguageMember>) Trivia()).Or(Token()).Or(Node());
         }
 
         public static Parser<NodeDeclaration> Node()
         {
             return from @abstract in Keyword("abstract").ZeroOrOne()
                    from keyword in Keyword("node")
+                   from @interface in Keyword("interface").ZeroOrOne()
                    from name in UnqualifiedName()
                    from members in NodeBody().ZeroOrOne().Select(x => x.Squash())
                    from end in StatementEnd()
                    select new NodeDeclaration
                    {
                        IsAbstract = @abstract.HasValue,
-                       Name = name
+                       Name = name,
+                       IsInterface = @interface.HasValue
                    };
         }
 
@@ -117,6 +139,16 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
                    from exp in TokenExpression()
                    from end in StatementEnd()
                    select new TokenDeclaration { Name = name, Expression = exp };
+        }
+
+        public static Parser<TriviaDeclaration> Trivia()
+        {
+            return from keyword in Keyword("trivia")
+                   from name in IdentifierName()
+                   from eq in EqualsSign()
+                   from exp in TokenExpression()
+                   from end in StatementEnd()
+                   select new TriviaDeclaration { Name = name, Expression = exp };
         }
 
         public static Parser<TokenExpression> TokenExpression()
@@ -177,6 +209,9 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
         public static Parser<String> AngleStart() { return Parse.String("<").Text(); }
         public static Parser<String> AngleEnd() { return Parse.String(">").Text(); }
 
+        public static Parser<String> ForwardSlash() { return Parse.String("/").Text(); }
+        public static Parser<String> BackSlash() { return Parse.String(@"\").Text(); }
+
         public static Parser<String> Quote() { return Parse.String("\"").Text(); }
         public static Parser<String> Period() { return Parse.String(".").Text(); }
         public static Parser<String> Comma() { return Parse.String(",").Text(); }
@@ -184,7 +219,9 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
         public static Parser<String> PlusSign() { return Parse.String("+").Text(); }
 
         public static Parser<String> QuestionMark() { return Parse.String("?").Text(); }
+        public static Parser<String> Exclamation() { return Parse.String("!").Text(); }
         public static Parser<String> Asterisk() { return Parse.String("*").Text(); }
+        public static Parser<String> Pipe() { return Parse.String("|").Text(); }
         
 
         public static Parser<String> StatementEnd() { return Parse.String(";").Text(); }

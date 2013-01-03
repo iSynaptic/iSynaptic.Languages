@@ -32,5 +32,14 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
         public List<ILanguageMember> Members { get { return _members ?? (_members = new List<ILanguageMember>()); } set { _members = value; } } 
 
         NameSyntax INamespaceMember.Name { get { return Name; } }
+
+        public void Accept(GrammarLanguageVisitor visitor, AcceptMode mode)
+        {
+            if(mode == AcceptMode.Self)
+                visitor.Visit(this);
+
+            if(mode == AcceptMode.Children)
+                visitor.Dispatch<ILanguageMember>(Members);
+        }
     }
 }

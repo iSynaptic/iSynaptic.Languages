@@ -20,25 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System.Collections.Generic;
-using iSynaptic.Commons.Linq;
-
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    public class NamespaceDeclaration : INamespaceMember
+    public class UsingStatement
     {
-        private List<INamespaceMember> _members;
-
-        public NameSyntax Name { get; set; }
-        public List<INamespaceMember> Members { get { return _members ?? (_members = new List<INamespaceMember>()); } set { _members = value; } }
-
-        public void Accept(GrammarLanguageVisitor visitor, AcceptMode mode)
-        {
-            if (mode == AcceptMode.Self)
-                visitor.Visit(this);
-
-            if (mode == AcceptMode.Children)
-                visitor.Dispatch<INamespaceMember>(Members);
-        }
+        public NameSyntax Identifier { get; set; }
     }
 }

@@ -24,9 +24,15 @@ using iSynaptic.Commons;
 
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    public class NodeMemberDeclaration
+    public class NodeMemberDeclaration : IVisitable<GrammarLanguageVisitor>
     {
         public TypeReference Type { get; set; }
         public Maybe<IdentifierNameSyntax> Name { get; set; }
+
+        public void Accept(GrammarLanguageVisitor visitor, AcceptMode mode)
+        {
+            if (mode == AcceptMode.Self)
+                visitor.Visit(this);
+        }
     }
 }

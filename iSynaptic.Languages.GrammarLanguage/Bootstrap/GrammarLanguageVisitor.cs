@@ -1,6 +1,6 @@
 ﻿// The MIT License
 // 
-// Copyright (c) 2012 Jordan E. Terrell
+// Copyright (c) 2013 Jordan E. Terrell
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,46 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System;
 using System.Collections.Generic;
-using iSynaptic.Commons.Linq;
 
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
-    public class NamespaceDeclaration : INamespaceMember
+    public abstract class GrammarLanguageVisitor : CodeAuthoringVisitor<GrammarLanguageVisitor>
     {
-        private List<INamespaceMember> _members;
-
-        public NameSyntax Name { get; set; }
-        public List<INamespaceMember> Members { get { return _members ?? (_members = new List<INamespaceMember>()); } set { _members = value; } }
-
-        public void Accept(GrammarLanguageVisitor visitor, AcceptMode mode)
+        public virtual void Visit(SyntaxTree syntaxTree)
         {
-            if (mode == AcceptMode.Self)
-                visitor.Visit(this);
+            syntaxTree.Accept(this, AcceptMode.Children);
+        }
 
-            if (mode == AcceptMode.Children)
-                visitor.Dispatch<INamespaceMember>(Members);
+        public virtual void Visit(NamespaceDeclaration @namespace)
+        {
+            @namespace.Accept(this, AcceptMode.Children);
+        }
+
+        public virtual void Visit(LanguageDeclaration language)
+        {
+            language.Accept(this, AcceptMode.Children);
+        }
+
+        public virtual void Visit(NodeDeclaration node)
+        {
+            node.Accept(this, AcceptMode.Children);
+        }
+
+        public virtual void Visit(NodeMemberDeclaration nodeMember)
+        {
+            nodeMember.Accept(this, AcceptMode.Children);
+        }
+
+        public virtual void Visit(TokenDeclaration token)
+        {
+            token.Accept(this, AcceptMode.Children);
+        }
+
+        public virtual void Visit(TriviaDeclaration trivia)
+        {
+            trivia.Accept(this, AcceptMode.Children);
         }
     }
 }

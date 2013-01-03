@@ -31,60 +31,13 @@ using iSynaptic.Commons.Linq;
 namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
 {
     [TestFixture]
-    public class ParserTests
+    public class ParserTests : ParserTestFixture
     {
         [Test]
-        public void FullParseTest()
+        public void FullGrammarParseTest()
         {
-            string input = 
-@"namespace iSynaptic.Languages
-{ 
-    language GrammarLanguage
-    {
-		token UsingKeyword = ""using"";
-		token AbstractKeyword = ""abstract"";
-		token NamespaceKeyword = ""namespace"";
-		token LanguageKeyword = ""language"";
-		token InterleaveKeyword = ""interleave"";
-		token TokenKeyword = ""token"";
-		token NodeKeyword = ""node"";
-
-		token OpenBrace = ""{"";
-		token CloseBrace = ""}"";
-		token OpenBracket = ""["";
-		token CloseBracket = ""]"";
-		token QuestionMark = ""?"";
-		token PlusSign = ""+"";
-		token MinusSign = ""-"";
-		token Asterisk = ""*"";
-		token EqualsSign = ""="";
-		token SemiColon = "";"";
-		token Underscore = ""_"";
-		token RangeOperator = "".."";
-		token Period = ""."";
-
-		abstract node NameSyntax;
-		abstract node LanguageMember;
-
-		node LanguageDeclaration(
-			LanguageKeyword,
-			Identifier name,
-			OpenBrace,
-			LanguageMember* members,
-			CloseBrace
-        );
-
-		node NamespaceDeclaration(
-			NamespaceKeyword,
-			Identifier name,
-			OpenBrace,
-			LanguageDeclaration* members,
-			CloseBrace
-        );
-
-    }
-}";
-            var value = Parser.Namespace().SuccessfullyParse(input);
+            string input = GetEmbeddedFile(typeof (Parser).Assembly, "GrammarLanguage.grammar");
+            var value = Parser.Start().SuccessfullyParse(input);
             value.Should().NotBeNull();
         }
 

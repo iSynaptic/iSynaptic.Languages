@@ -28,5 +28,11 @@ namespace iSynaptic.Languages.GrammarLanguage.Bootstrap
         public TokenExpression Expression { get; set; }
 
         UnqualifiedNameSyntax ILanguageMember.Name { get { return Name; } }
+
+        public void Accept(GrammarLanguageVisitor visitor, AcceptMode mode)
+        {
+            if (mode == AcceptMode.Self)
+                visitor.Visit(this);
+        }
     }
 }
